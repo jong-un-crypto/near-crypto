@@ -173,7 +173,7 @@ impl PublicKey {
         match self {
             Self::ED25519(_) => KeyType::ED25519,
             Self::SECP256K1(_) => KeyType::SECP256K1,
-	    Self::RSA(_) => KeyType::RSA2048,
+	        Self::RSA(_) => KeyType::RSA2048,
         }
     }
 
@@ -181,12 +181,20 @@ impl PublicKey {
         match self {
             Self::ED25519(key) => key.as_ref(),
             Self::SECP256K1(key) => key.as_ref(),
+            Self::RSA(key) => key.as_ref(),
         }
     }
 
     pub fn unwrap_as_ed25519(&self) -> &ED25519PublicKey {
         match self {
             Self::ED25519(key) => key,
+            _ => panic!(),
+        }
+    }
+
+    pub fn unwrap_as_rsa2048(&self) -> &Rsa2048PublicKey {
+        match self {
+            Self::RSA(key) => key,
             _ => panic!(),
         }
     }
@@ -205,7 +213,7 @@ impl Hash for PublicKey {
                 state.write_u8(1u8);
                 state.write(&public_key.0);
             }
-	    PublicKey::RSA(public_key) => {
+	        PublicKey::RSA(public_key) => {
                 state.write_u8(2u8);
                 state.write(&public_key.0);
             }
@@ -368,8 +376,8 @@ impl SecretKey {
             KeyType::SECP256K1 => {
                 SecretKey::SECP256K1(secp256k1::SecretKey::new(&mut secp256k1::rand::rngs::OsRng))
             }
-	    KeyType::RSA2048 => {
-                SecretKey::RSA(rsa::RsaPrivateKey::new(&mut OsRng, PRIVTAE_KEY_DEFAULT_RSA_KEY_BITS).unwrap())
+	        KeyType::RSA2048 => {
+                SecretKey::RSA(rsa::RsaPrivateKey::new(&mut rsa::rand_core::OsRng, PRIVTAE_KEY_DEFAULT_RSA_KEY_BITS).unwrap())
             }
         }
     }
