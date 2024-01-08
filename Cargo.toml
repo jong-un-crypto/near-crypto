@@ -21,6 +21,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/near/nearcore"
 resolver = "1"
 
+[dependencies.rsa]
+version = "0.9.6"
+
 [dependencies.blake2]
 version = "0.9.1"
 
