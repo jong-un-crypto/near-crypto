@@ -27,7 +27,7 @@ impl Display for KeyType {
         f.write_str(match self {
             KeyType::ED25519 => "ed25519",
             KeyType::SECP256K1 => "secp256k1",
-	    KeyType::RSA2048 => "rsa2048",
+	        KeyType::RSA2048 => "rsa2048",
         })
     }
 }
@@ -40,7 +40,7 @@ impl FromStr for KeyType {
         match lowercase_key_type.as_str() {
             "ed25519" => Ok(KeyType::ED25519),
             "secp256k1" => Ok(KeyType::SECP256K1),
-	    "rsa2048" => Ok(KeyType::RSA2048),
+	        "rsa2048" => Ok(KeyType::RSA2048),
             _ => Err(Self::Err::UnknownKeyType { unknown_key_type: lowercase_key_type }),
         }
     }
@@ -53,7 +53,7 @@ impl TryFrom<u8> for KeyType {
         match value {
             0_u8 => Ok(KeyType::ED25519),
             1_u8 => Ok(KeyType::SECP256K1),
-	    2_u8 => Ok(KeyType::RSA2048),
+	        2_u8 => Ok(KeyType::RSA2048),
             unknown_key_type => {
                 Err(Self::Error::UnknownKeyType { unknown_key_type: unknown_key_type.to_string() })
             }
@@ -155,7 +155,7 @@ impl PublicKey {
         match self {
             Self::ED25519(_) => ED25519_LEN,
             Self::SECP256K1(_) => 65,
-	    Self::RSA(_) => RAW_PUBLIC_KEY_RSA_2048_LENGTH + 1,
+	        Self::RSA(_) => RAW_PUBLIC_KEY_RSA_2048_LENGTH + 1,
         }
     }
 
@@ -249,7 +249,7 @@ impl BorshSerialize for PublicKey {
                 BorshSerialize::serialize(&1u8, writer)?;
                 writer.write_all(&public_key.0)?;
             }
-	    PublicKey::RSA(public_key) => {
+	        PublicKey::RSA(public_key) => {
                 BorshSerialize::serialize(&2u8, writer)?;
                 writer.write_all(&public_key.0)?;
             }
@@ -269,7 +269,7 @@ impl BorshDeserialize for PublicKey {
             KeyType::SECP256K1 => Ok(PublicKey::SECP256K1(Secp256K1PublicKey(
                 BorshDeserialize::deserialize_reader(rd)?,
             ))),
-	    KeyType::RSA2048 => Ok(PublicKey::RSA(Rsa2048PublicKey(
+	        KeyType::RSA2048 => Ok(PublicKey::RSA(Rsa2048PublicKey(
                 BorshDeserialize::deserialize_reader(rd)?,
             ))),
         }
@@ -363,7 +363,7 @@ impl SecretKey {
         match self {
             SecretKey::ED25519(_) => KeyType::ED25519,
             SecretKey::SECP256K1(_) => KeyType::SECP256K1,
-	    SecretKey::RSA(_) => KeyType::RSA2048,
+	        SecretKey::RSA(_) => KeyType::RSA2048,
         }
     }
 
@@ -400,7 +400,7 @@ impl SecretKey {
                 buf[64] = rec_id.to_i32() as u8;
                 Signature::SECP256K1(Secp256K1Signature(buf))
             }
-	    SecretKey::RSA(secret_key) => {
+	        SecretKey::RSA(secret_key) => {
                 let sign_data = secret_key.sign(Pkcs1v15Sign::new_unprefixed(), data).unwrap();
                 Signature::RSA(Rsa2048Signature(<[u8; 256]>::try_from(sign_data.as_slice()).unwrap()))
             }
@@ -419,7 +419,7 @@ impl SecretKey {
                 public_key.0.copy_from_slice(&serialized[1..65]);
                 PublicKey::SECP256K1(public_key)
             },
-	    SecretKey::RSA(secret_key) => {
+	        SecretKey::RSA(secret_key) => {
                 let pk = secret_key.to_public_key();
                 let mut public_key = [0; RAW_PUBLIC_KEY_RSA_2048_LENGTH];
                 public_key.copy_from_slice(&pk.to_public_key_der().unwrap().as_bytes());
@@ -431,6 +431,12 @@ impl SecretKey {
     pub fn unwrap_as_ed25519(&self) -> &ED25519SecretKey {
         match self {
             SecretKey::ED25519(key) => key,
+            _ => panic!(),
+        }
+    }
+    pub fn unwrap_as_rsa2048(&self) -> &rsa::RsaPrivateKey {
+        match self {
+            SecretKey::RSA(key) => key,
             _ => panic!(),
         }
     }
@@ -469,7 +475,7 @@ impl FromStr for SecretKey {
                     .map_err(|err| Self::Err::InvalidData { error_message: err.to_string() })?;
                 Self::SECP256K1(sk)
             },
-	    KeyType::RSA2048 => {
+	        KeyType::RSA2048 => {
                 let sk = rsa::RsaPrivateKey::from_pkcs8_der(&decode_bs58::<1218>(key_data)?)
                     .map_err(|err| Self::Err::InvalidData { error_message: err.to_string() })?;
                 Self::RSA(sk)
@@ -640,7 +646,7 @@ impl Signature {
                     },
                 )?))
             }
-	    KeyType::RSA2048 => Ok(Signature::RSA(Rsa2048Signature::try_from(signature_data).map_err(
+	        KeyType::RSA2048 => Ok(Signature::RSA(Rsa2048Signature::try_from(signature_data).map_err(
                 |_| crate::errors::ParseSignatureError::InvalidData {
                     error_message: "invalid RSA2048 signature length".to_string(),
                 },
@@ -679,7 +685,7 @@ impl Signature {
                     )
                     .is_ok()
             }
-	    (Signature::RSA(signature), PublicKey::RSA(public_key)) => {
+	        (Signature::RSA(signature), PublicKey::RSA(public_key)) => {
                 let pk = rsa::RsaPublicKey::from_public_key_der(&public_key.0).unwrap();
                 match pk.verify(Pkcs1v15Sign::new_unprefixed(), &data, signature.0.as_ref()) {
                     Ok(_) => true,
@@ -694,7 +700,7 @@ impl Signature {
         match self {
             Signature::ED25519(_) => KeyType::ED25519,
             Signature::SECP256K1(_) => KeyType::SECP256K1,
-	    Signature::RSA(_) => KeyType::RSA2048,
+	        Signature::RSA(_) => KeyType::RSA2048,
         }
     }
 }
@@ -716,7 +722,7 @@ impl BorshSerialize for Signature {
                 BorshSerialize::serialize(&1u8, writer)?;
                 writer.write_all(&signature.0)?;
             }
-	    Signature::RSA(signature) => {
+	        Signature::RSA(signature) => {
                 BorshSerialize::serialize(&2u8, writer)?;
                 writer.write_all(&signature.0)?;
             }
@@ -742,7 +748,7 @@ impl BorshDeserialize for Signature {
                 let array: [u8; 65] = BorshDeserialize::deserialize_reader(rd)?;
                 Ok(Signature::SECP256K1(Secp256K1Signature(array)))
             }
-	    KeyType::RSA2048 => {
+	        KeyType::RSA2048 => {
                 let array: [u8; 256] = BorshDeserialize::deserialize_reader(rd)?;
                 Ok(Signature::RSA(Rsa2048Signature(array)))
             }
