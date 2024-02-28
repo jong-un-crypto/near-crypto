@@ -349,7 +349,6 @@ impl std::fmt::Debug for ED25519SecretKey {
 }
 
 pub(crate) const PRIVTAE_KEY_DEFAULT_RSA_KEY_BITS: usize = 2048;
-pub(crate) const RAW_SECRET_KEY_RSA_2048_LENGTH: usize = 1218; //1218 raw key + 294 header
 
 /// Secret key container supporting different curves.
 #[derive(Clone, Eq, PartialEq, Debug)]
